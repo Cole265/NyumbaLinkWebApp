@@ -8,5 +8,8 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote')->hourly();
 
-//Expiring listings notification
+// Expiring listings notification
 Schedule::command('listings:notify-expiring')->dailyAt('09:00');
+
+// Auto-expire listings that have passed their expiry date
+Schedule::command('listings:expire')->dailyAt('00:00');

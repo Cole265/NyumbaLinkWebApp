@@ -53,4 +53,11 @@ class Inquiry extends Model
             'responded_at' => now(),
         ]);
     }
+
+    public function markAsClosed()
+    {
+        $this->update([
+            'status' => 'closed',
+        ]);
+    }
 }

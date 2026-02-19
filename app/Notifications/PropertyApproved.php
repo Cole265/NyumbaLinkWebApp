@@ -23,9 +23,9 @@ class PropertyApproved extends Notification
     public function toMail($notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Property Approved on NyumbaLink')
+            ->subject('Property Approved on Khomolanu')
             ->greeting('Great News!')
-            ->line("Your property '{$this->property->title}' has been approved and is now live on NyumbaLink.")
+            ->line("Your property '{$this->property->title}' has been approved and is now live on Khomolanu.")
             ->line('Tenants can now view and inquire about your property.')
             ->action('View Property', url("/properties/{$this->property->id}"))
             ->line('Consider boosting your property for more visibility!');

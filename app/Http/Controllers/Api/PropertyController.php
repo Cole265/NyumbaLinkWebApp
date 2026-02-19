@@ -10,6 +10,9 @@ use App\Models\PropertyAmenity;
 use App\Models\Listing;
 use App\Models\PropertyBoost;
 use App\Models\Transaction;
+use App\Models\Tenancy;
+use App\Models\User;
+use App\Models\Inquiry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
@@ -155,6 +158,13 @@ class PropertyController extends Controller
         $property->is_boosted = $property->isBoosted();
         $property->total_views = $property->listing?->view_count ?? 0;
         $property->total_inquiries = $property->listing?->inquiry_count ?? 0;
+        $property->formatted_images = $property->images->map(function ($image) {
+            return [
+                'id' => $image->id,
+                'url' => asset('storage/' . $image->image_path),
+                'is_primary' => $image->is_primary,
+            ];
+        });
 
         return response()->json([
             'success' => true,
@@ -374,7 +384,7 @@ class PropertyController extends Controller
                 'transaction_type' => 'boost_fee',
                 'amount' => $amount,
                 'payment_method' => $validated['payment_method'],
-                'reference_number' => 'NL-BOOST-' . strtoupper(uniqid()),
+                'reference_number' => 'KL-BOOST-' . strtoupper(uniqid()),
                 'status' => 'pending', // In production, integrate with payment gateway
             ]);
 
@@ -413,5 +423,169 @@ class PropertyController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Mark property as rented (assign tenant)
+     */
+    public function markAsRented(Request $request, Property $property)
+    {
+        $landlord = $request->user()->landlordProfile;
+
+        // Verify landlord owns this property
+        if ($property->landlord_id !== $landlord->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized',
+            ], 403);
+        }
+
+        // Check if property is already rented
+        if ($property->status === 'rented' && $property->activeTenancy()->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This property is already rented',
+            ], 422);
+        }
+
+        $validated = $request->validate([
+            'tenant_id' => 'required|exists:users,id',
+            'start_date' => 'required|date',
+        ]);
+
+        // Verify tenant exists and is a tenant
+        $tenant = User::findOrFail($validated['tenant_id']);
+        if ($tenant->role !== 'tenant') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Selected user is not a tenant',
+            ], 422);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            // Create tenancy record
+            $tenancy = Tenancy::create([
+                'property_id' => $property->id,
+                'tenant_id' => $tenant->id,
+                'landlord_id' => $landlord->id,
+                'start_date' => $validated['start_date'],
+                'status' => 'active',
+            ]);
+
+            // Update property status
+            $property->update(['status' => 'rented']);
+
+            // Deactivate listing
+            if ($property->listing) {
+                $property->listing->update(['is_active' => false]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Property marked as rented successfully',
+                'data' => [
+                    'property' => $property->fresh(['activeTenancy.tenant']),
+                    'tenancy' => $tenancy->load('tenant'),
+                ],
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to mark property as rented',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Get all rented properties for landlord
+     */
+    public function rentedProperties(Request $request)
+    {
+        $landlord = $request->user()->landlordProfile;
+
+        $properties = Property::with([
+            'images',
+            'primaryImage',
+            'amenities',
+            'listing',
+            'activeTenancy.tenant',
+        ])
+        ->where('landlord_id', $landlord->id)
+        ->where('status', 'rented')
+        ->whereHas('activeTenancy')
+        ->orderBy('created_at', 'desc')
+        ->paginate(15);
+
+        // Add computed fields
+        $properties->getCollection()->transform(function ($property) {
+            $property->primary_image_url = $property->primaryImage 
+                ? asset('storage/' . $property->primaryImage->image_path)
+                : null;
+            
+            // Load active tenancy if not already loaded
+            if (!$property->relationLoaded('activeTenancy')) {
+                $property->load('activeTenancy.tenant');
+            }
+            
+            $property->tenant_name = $property->activeTenancy?->tenant?->name ?? null;
+            $property->tenant_email = $property->activeTenancy?->tenant?->email ?? null;
+            $property->tenant_phone = $property->activeTenancy?->tenant?->phone ?? null;
+            $property->tenancy_start_date = $property->activeTenancy?->start_date?->format('Y-m-d') ?? null;
+            return $property;
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => $properties,
+        ]);
+    }
+
+    /**
+     * Get inquiries for a specific property (for tenant selection)
+     */
+    public function propertyInquiries(Request $request, Property $property)
+    {
+        $landlord = $request->user()->landlordProfile;
+
+        // Verify landlord owns this property
+        if ($property->landlord_id !== $landlord->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized',
+            ], 403);
+        }
+
+        $inquiries = Inquiry::with(['tenant'])
+            ->whereHas('listing', function ($query) use ($property) {
+                $query->where('property_id', $property->id);
+            })
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $inquiries = $inquiries->map(function ($inquiry) {
+            return [
+                'id' => $inquiry->id,
+                'tenant_id' => $inquiry->tenant_id,
+                'tenant_name' => $inquiry->tenant->name,
+                'tenant_email' => $inquiry->tenant->email,
+                'tenant_phone' => $inquiry->tenant->phone,
+                'message' => $inquiry->message,
+                'status' => $inquiry->status,
+                'created_at' => $inquiry->created_at->format('Y-m-d H:i:s'),
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => $inquiries,
+        ]);
     }
 }

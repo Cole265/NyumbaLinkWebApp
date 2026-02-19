@@ -24,7 +24,7 @@ class VerificationRejected extends Notification
     public function toMail($notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('NyumbaLink Verification Update')
+            ->subject('Khomolanu Verification Update')
             ->greeting("Hello {$this->landlordName},")
             ->line('We were unable to verify your account at this time.')
             ->line("Reason: {$this->reason}")

@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\ListingController;
 use App\Http\Controllers\Api\InquiryController;
 use App\Http\Controllers\Api\RatingController;
 use App\Http\Controllers\Api\LandlordController;
+use App\Http\Controllers\Api\TenantController;
 use App\Http\Controllers\Api\Admin\VerificationController;
 use App\Http\Controllers\Api\Admin\DashboardController;
 use App\Http\Controllers\Api\NotificationController;
@@ -40,8 +41,10 @@ Route::prefix('v1')->group(function () {
     
     // Public property search
     Route::get('/properties', [SearchController::class, 'index']);
-    Route::get('/properties/{id}', [SearchController::class, 'show']);
+    // More specific routes must come before the generic /properties/{id}
+    Route::get('/properties/{id}/ratings', [RatingController::class, 'propertyRatings']);
     Route::post('/properties/{id}/view', [SearchController::class, 'incrementView']);
+    Route::get('/properties/{id}', [SearchController::class, 'show']);
     
     // Search filters
     Route::get('/cities', [SearchController::class, 'getCities']);
@@ -56,6 +59,9 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         return $request->user()->load(['landlordProfile', 'tenantProfile', 'adminProfile']);
     });
     Route::post('/logout', [AuthController::class, 'logout']);
+
+    // Report property (any authenticated user)
+    Route::post('/report-property', [\App\Http\Controllers\Api\ReportController::class, 'store']);
     
     // ============ LANDLORD ROUTES ============
     Route::middleware(['role:landlord'])->prefix('landlord')->group(function () {
@@ -73,15 +79,26 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         
         // Properties (only verified landlords)
         Route::middleware(['verified.landlord'])->group(function () {
+            // Rented Properties route must come before apiResource to avoid route conflict
+            Route::get('/properties/rented', [PropertyController::class, 'rentedProperties']);
+            
             Route::apiResource('properties', PropertyController::class);
             Route::post('/properties/{property}/publish', [PropertyController::class, 'publish']);
             Route::post('/properties/{property}/boost', [PropertyController::class, 'boost']);
+            Route::post('/properties/{property}/rent', [PropertyController::class, 'markAsRented']);
+            Route::get('/properties/{property}/inquiries', [PropertyController::class, 'propertyInquiries']);
         });
+        
+        // Search tenants (for assigning to properties)
+        Route::get('/tenants/search', [LandlordController::class, 'searchTenants']);
         
         // Listings
         Route::get('/listings', [ListingController::class, 'landlordListings']);
         Route::get('/inquiries', [InquiryController::class, 'landlordInquiries']);
         Route::post('/inquiries/{inquiry}/respond', [InquiryController::class, 'respond']);
+        Route::post('/inquiries/{inquiry}/close', [InquiryController::class, 'close']);
+        Route::delete('/inquiries/{inquiry}', [InquiryController::class, 'destroy']);
+        Route::get('/ratings', [RatingController::class, 'myLandlordRatings']);
         
         // Analytics
         Route::get('/analytics', [LandlordController::class, 'analytics']);
@@ -107,9 +124,21 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::post('/inquiries', [InquiryController::class, 'store']);
         Route::get('/inquiries', [InquiryController::class, 'tenantInquiries']);
         
+        // Tenancies
+        Route::get('/tenancies', [TenantController::class, 'myTenancies']);
+        Route::post('/tenancies/{tenancy}/vacate', [TenantController::class, 'vacateAndRate']);
+        
         // Ratings
         Route::post('/ratings', [RatingController::class, 'store']);
         Route::get('/ratings', [RatingController::class, 'tenantRatings']);
+        Route::put('/ratings/{rating}', [RatingController::class, 'update']);
+        Route::delete('/ratings/{rating}', [RatingController::class, 'destroy']);
+
+        // Favorites / saved properties
+        Route::get('/favorites', [\App\Http\Controllers\Api\FavoriteController::class, 'index']);
+        Route::get('/favorites/ids', [\App\Http\Controllers\Api\FavoriteController::class, 'ids']);
+        Route::post('/favorites', [\App\Http\Controllers\Api\FavoriteController::class, 'store']);
+        Route::delete('/favorites/{propertyId}', [\App\Http\Controllers\Api\FavoriteController::class, 'destroy']);
     });
     
     // ============ ADMIN ROUTES ============
@@ -118,6 +147,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         // Dashboard
         Route::get('/dashboard', [DashboardController::class, 'index']);
         Route::get('/stats', [DashboardController::class, 'stats']);
+        Route::get('/contact-messages', [DashboardController::class, 'contactMessages']);
         
         // Verification Management
         Route::get('/verifications', [VerificationController::class, 'index']);
@@ -127,11 +157,17 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         
         // Property moderation
         Route::get('/properties/pending', [DashboardController::class, 'pendingProperties']);
+        Route::get('/properties/{property}', [DashboardController::class, 'showProperty']);
         Route::post('/properties/{property}/approve', [DashboardController::class, 'approveProperty']);
         Route::post('/properties/{property}/reject', [DashboardController::class, 'rejectProperty']);
         
         // User management
         Route::get('/users', [DashboardController::class, 'users']);
         Route::post('/users/{user}/suspend', [DashboardController::class, 'suspendUser']);
+
+        // Property reports
+        Route::get('/reports', [DashboardController::class, 'reports']);
+        Route::post('/reports/{report}/review', [DashboardController::class, 'reportReview']);
+        Route::post('/reports/{report}/dismiss', [DashboardController::class, 'reportDismiss']);
     });
 });

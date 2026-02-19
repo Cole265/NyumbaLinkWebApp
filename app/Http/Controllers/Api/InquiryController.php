@@ -231,6 +231,57 @@ class InquiryController extends Controller
     }
 
     /**
+     * Landlord marks inquiry as closed
+     */
+    public function close(Request $request, $id)
+    {
+        $landlord = $request->user()->landlordProfile;
+
+        $inquiry = Inquiry::with('listing.property')
+            ->findOrFail($id);
+
+        // Verify landlord owns this property
+        if ($inquiry->listing->property->landlord_id !== $landlord->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized',
+            ], 403);
+        }
+
+        $inquiry->markAsClosed();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Inquiry marked as closed',
+            'data' => $inquiry,
+        ]);
+    }
+
+    /**
+     * Landlord deletes an inquiry (for their property)
+     */
+    public function destroy(Request $request, $id)
+    {
+        $landlord = $request->user()->landlordProfile;
+
+        $inquiry = Inquiry::with('listing.property')->findOrFail($id);
+
+        if ($inquiry->listing->property->landlord_id !== $landlord->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized',
+            ], 403);
+        }
+
+        $inquiry->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Inquiry deleted.',
+        ]);
+    }
+
+    /**
      * Get tenant profile
      */
     public function tenantProfile(Request $request)

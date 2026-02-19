@@ -437,4 +437,33 @@ class LandlordController extends Controller
             ],
         ]);
     }
+
+    /**
+     * Search tenants (for assigning to properties)
+     */
+    public function searchTenants(Request $request)
+    {
+        $search = $request->get('search', '');
+
+        if (strlen($search) < 2) {
+            return response()->json([
+                'success' => true,
+                'data' => [],
+            ]);
+        }
+
+        $tenants = User::where('role', 'tenant')
+            ->where(function ($query) use ($search) {
+                $query->where('name', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%")
+                      ->orWhere('phone', 'like', "%{$search}%");
+            })
+            ->limit(20)
+            ->get(['id', 'name', 'email', 'phone']);
+
+        return response()->json([
+            'success' => true,
+            'data' => $tenants,
+        ]);
+    }
 }

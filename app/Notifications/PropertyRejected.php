@@ -24,7 +24,7 @@ class PropertyRejected extends Notification
     public function toMail($notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Property Review Update - NyumbaLink')
+            ->subject('Property Review Update - Khomolanu')
             ->greeting('Property Review Update')
             ->line("Your property '{$this->property->title}' requires some changes before it can be published.")
             ->line("Reason: {$this->reason}")

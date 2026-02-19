@@ -27,6 +27,7 @@ class Property extends Model
         'latitude',
         'longitude',
         'status',
+        'rejection_reason',
     ];
 
     protected $casts = [
@@ -88,6 +89,16 @@ class Property extends Model
     public function transactions()
     {
         return $this->hasMany(Transaction::class);
+    }
+
+    public function tenancies()
+    {
+        return $this->hasMany(Tenancy::class);
+    }
+
+    public function activeTenancy()
+    {
+        return $this->hasOne(Tenancy::class)->where('status', 'active');
     }
 
     // Helper methods

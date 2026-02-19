@@ -25,12 +25,12 @@ class VerificationApproved extends Notification
     public function toMail($notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Your NyumbaLink Account is Verified!')
+            ->subject('Your Khomolanu Account is Verified!')
             ->greeting("Hello {$this->landlordName}!")
             ->line('Congratulations! Your landlord account has been verified.')
-            ->line('You can now start listing your properties on NyumbaLink.')
+            ->line('You can now start listing your properties on Khomolanu.')
             ->action('Create Your First Property', url('/landlord/properties/create'))
-            ->line('Thank you for joining NyumbaLink!');
+            ->line('Thank you for joining Khomolanu!');
     }
 
     public function toDatabase($notifiable): array

@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Khomolanu Payment System Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .test-section h2 {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .test-section button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        
+        .test-section button:hover {
+            background: #5568d3;
+        }
+        
+        .test-result {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .result-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .result-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .result-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        
+        .status-badge.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-badge.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status-badge.loading {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .checklist {
+            list-style: none;
+            margin-top: 10px;
+        }
+        
+        .checklist li {
+            padding: 8px 0;
+            color: #555;
+            font-size: 13px;
+        }
+        
+        .checklist li:before {
+            content: "○ ";
+            color: #999;
+            margin-right: 8px;
+        }
+        
+        .checklist li.pass:before {
+            content: "✓ ";
+            color: #28a745;
+        }
+        
+        .checklist li.pass {
+            color: #28a745;
+        }
+        
+        .checklist li.fail:before {
+            content: "✗ ";
+            color: #dc3545;
+        }
+        
+        .checklist li.fail {
+            color: #dc3545;
+        }
+        
+        .divider {
+            height: 1px;
+            background: #ddd;
+            margin: 30px 0;
+        }
+        
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 15px;
+            font-size: 13px;
+            color: #0d47a1;
+        }
+        
+        .info-box strong {
+            display: block;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Payment System Test</h1>
+        <p class="subtitle">Test your Khomolanu payment system configuration</p>
+        
+        <!-- Test 1: Backend Connectivity -->
+        <div class="test-section">
+            <h2>
+                <span id="test1-status">🔄</span>
+                Test 1: Backend Connectivity
+            </h2>
+            <button onclick="testBackendConnectivity()">Test Connection</button>
+            <div id="test1-result"></div>
+        </div>
+        
+        <!-- Test 2: Authentication -->
+        <div class="test-section">
+            <h2>
+                <span id="test2-status">🔄</span>
+                Test 2: Authentication
+            </h2>
+            <button onclick="testAuthentication()">Test Login</button>
+            <div class="info-box">
+                <strong>Test Credentials:</strong>
+                Email: john.banda@gmail.com<br>
+                Password: password
+            </div>
+            <div id="test2-result"></div>
+        </div>
+        
+        <!-- Test 3: Payment Endpoint -->
+        <div class="test-section">
+            <h2>
+                <span id="test3-status">🔄</span>
+                Test 3: Payment Endpoint
+            </h2>
+            <button onclick="testPaymentEndpoint()">Test Payment API</button>
+            <div id="test3-result"></div>
+        </div>
+        
+        <!-- Test 4: Database -->
+        <div class="test-section">
+            <h2>
+                <span id="test4-status">🔄</span>
+                Test 4: Database Status
+            </h2>
+            <button onclick="testDatabase()">Check Database</button>
+            <div id="test4-result"></div>
+        </div>
+        
+        <div class="divider"></div>
+        
+        <!-- Results Summary -->
+        <div class="test-section">
+            <h2>✅ Quick Checklist</h2>
+            <ul class="checklist">
+                <li id="check-backend">Backend server running</li>
+                <li id="check-auth">User authentication working</li>
+                <li id="check-landlord">User has landlord role</li>
+                <li id="check-payment">Payment endpoint responding</li>
+                <li id="check-database">Database initialized</li>
+            </ul>
+        </div>
+        
+        <!-- Instructions -->
+        <div class="info-box" style="border-left-color: #ff9800; background: #fff3e0; color: #e65100;">
+            <strong>📋 Instructions:</strong>
+            1. Make sure backend is running: <code>php artisan serve</code><br>
+            2. Click "Test Connection" to start<br>
+            3. Follow test results and fix any issues<br>
+            4. Once all tests pass, payment button should work!
+        </div>
+    </div>
+    
+    <script>
+        const API_URL = 'http://localhost:8000/api/v1';
+        let authToken = null;
+        
+        function showResult(elementId, success, message, details = null) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="test-result ${success ? 'result-success' : 'result-error'}">${message}${details ? '\n\n' + JSON.stringify(details, null, 2) : ''}</div>`;
+            
+            const testNum = elementId.match(/test(\d)/)[1];
+            const statusElement = document.getElementById(`test${testNum}-status`);
+            statusElement.textContent = success ? '✅' : '❌';
+        }
+        
+        async function testBackendConnectivity() {
+            const elementId = 'test1-result';
+            document.getElementById('test1-status').textContent = '🔄';
+            
+            try {
+                const response = await fetch(`${API_URL.replace('/v1', '')}/test`);
+                if (response.ok) {
+                    const data = await response.json();
+                    showResult(elementId, true, 'Backend is running and responding!', data);
+                    document.getElementById('check-backend').classList.add('pass');
+                } else {
+                    showResult(elementId, false, `Backend returned status ${response.status}`);
+                }
+            } catch (error) {
+                showResult(elementId, false, `Connection failed: ${error.message}\n\nMake sure backend is running: php artisan serve`);
+            }
+        }
+        
+        async function testAuthentication() {
+            const elementId = 'test2-result';
+            document.getElementById('test2-status').textContent = '🔄';
+            
+            try {
+                const response = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        email: 'john.banda@gmail.com',
+                        password: 'password'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.data?.token) {
+                    authToken = data.data.token;
+                    localStorage.setItem('auth_token', authToken);
+                    showResult(elementId, true, 'Authentication successful! Token saved.', {
+                        user: data.data.user?.name,
+                        email: data.data.user?.email,
+                        token: authToken.substring(0, 20) + '...'
+                    });
+                    document.getElementById('check-auth').classList.add('pass');
+                    
+                    // Test landlord role
+                    if (data.data.user?.role === 'landlord') {
+                        document.getElementById('check-landlord').classList.add('pass');
+                    } else {
+                        document.getElementById('check-landlord').classList.add('fail');
+                    }
+                } else {
+                    showResult(elementId, false, 'Authentication failed', data);
+                }
+            } catch (error) {
+                showResult(elementId, false, `Login error: ${error.message}`);
+            }
+        }
+        
+        async function testPaymentEndpoint() {
+            const elementId = 'test3-result';
+            document.getElementById('test3-status').textContent = '🔄';
+            
+            if (!authToken) {
+                showResult(elementId, false, 'No auth token. Please run Test 2 first.');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/payments/listing-fee`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        property_id: 1,
+                        payment_method: 'mobile_money'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    showResult(elementId, true, 'Payment endpoint working!', {
+                        status: 'success',
+                        transaction_id: data.transaction_id,
+                        payment_id: data.payment_id,
+                        amount: data.amount
+                    });
+                    document.getElementById('check-payment').classList.add('pass');
+                } else {
+                    const errorMsg = `Status ${response.status}: ${data.message || 'Unknown error'}`;
+                    showResult(elementId, false, errorMsg, data);
+                    
+                    if (response.status === 403) {
+                        document.getElementById('check-landlord').classList.add('fail');
+                    }
+                }
+            } catch (error) {
+                showResult(elementId, false, `Payment test error: ${error.message}`);
+            }
+        }
+        
+        async function testDatabase() {
+            const elementId = 'test4-result';
+            document.getElementById('test4-status').textContent = '🔄';
+            
+            if (!authToken) {
+                showResult(elementId, false, 'No auth token. Please run Test 2 first.');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/landlord/properties?limit=1`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.status === 200) {
+                    const data = await response.json();
+                    const count = data.data?.length || 0;
+                    
+                    showResult(elementId, count > 0, 
+                        `Database check: ${count > 0 ? '✓' : '✗'} ${count} properties found`,
+                        data.data?.[0] ? {
+                            id: data.data[0].id,
+                            title: data.data[0].title,
+                            type: data.data[0].property_type,
+                            status: data.data[0].status
+                        } : null
+                    );
+                    
+                    if (count > 0) {
+                        document.getElementById('check-database').classList.add('pass');
+                    }
+                } else {
+                    showResult(elementId, false, `Database check failed with status ${response.status}`);
+                }
+            } catch (error) {
+                showResult(elementId, false, `Database test error: ${error.message}`);
+            }
+        }
+        
+        // Auto-run test on page load
+        console.log('🧪 Payment System Tester Loaded');
+        console.log('Click "Test Connection" to start testing');
+    </script>
+</body>
+</html>

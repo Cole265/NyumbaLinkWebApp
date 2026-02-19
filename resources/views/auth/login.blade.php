@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - NyumbaLink Malawi</title>
+    <title>Login - Khomolanu Malawi</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
@@ -16,10 +16,10 @@
             <div class="flex justify-between items-center h-16">
                 <a href="/" class="flex items-center space-x-2">
                     <div class="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-lg flex items-center justify-center">
-                        <span class="text-white font-bold text-xl">NL</span>
+                        <span class="text-white font-bold text-xl">KL</span>
                     </div>
                     <span class="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                        NyumbaLink
+                        Khomolanu
                     </span>
                 </a>
                 <div class="flex items-center space-x-4">
@@ -38,6 +38,22 @@
                     <h2 class="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h2>
                     <p class="text-gray-600">Login to access your account</p>
                 </div>
+
+                @if (session('status'))
+                    <div class="mb-6 p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm">
+                        {{ session('status') }}
+                    </div>
+                @endif
+                @if (session('message'))
+                    <div class="mb-6 p-4 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg text-sm">
+                        {{ session('message') }}
+                    </div>
+                @endif
+                @if (session('error'))
+                    <div class="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+                        {{ session('error') }}
+                    </div>
+                @endif
 
                 {{-- Form --}}
                 <form action="/api/v1/login" method="POST" x-data="loginForm()">
@@ -99,7 +115,7 @@
                         <div class="w-full border-t border-gray-300"></div>
                     </div>
                     <div class="relative flex justify-center text-sm">
-                        <span class="px-2 bg-white text-gray-500">New to NyumbaLink?</span>
+                        <span class="px-2 bg-white text-gray-500">New to Khomolanu?</span>
                     </div>
                 </div>
 
@@ -133,6 +149,7 @@
                     try {
                         const response = await fetch('/api/v1/login', {
                             method: 'POST',
+                            credentials: 'same-origin',
                             headers: {
                                 'Content-Type': 'application/json',
                                 'Accept': 'application/json',

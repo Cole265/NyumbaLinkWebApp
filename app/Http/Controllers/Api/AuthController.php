@@ -34,6 +34,8 @@ class AuthController extends Controller
             'role' => $validated['role'],
         ]);
 
+        $user->sendEmailVerificationNotification();
+
         // Create role-specific profile
         if ($user->role === 'landlord') {
             LandlordProfile::create([
@@ -49,11 +51,13 @@ class AuthController extends Controller
         // Create token
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        return response()->json([
+        $response = response()->json([
             'message' => 'Registration successful',
             'user' => $user->load(['landlordProfile', 'tenantProfile']),
             'token' => $token,
         ], 201);
+        $response->cookie('auth_token', $token, 60 * 24 * 7, '/', null, request()->secure(), true, false, 'lax');
+        return $response;
     }
 
     /**
@@ -74,17 +78,25 @@ class AuthController extends Controller
             ]);
         }
 
+        if ($user->is_suspended ?? false) {
+            throw ValidationException::withMessages([
+                'email' => ['Your account has been suspended. Please contact support.'],
+            ]);
+        }
+
         // Delete old tokens
         $user->tokens()->delete();
 
         // Create new token
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        return response()->json([
+        $response = response()->json([
             'message' => 'Login successful',
             'user' => $user->load(['landlordProfile', 'tenantProfile', 'adminProfile']),
             'token' => $token,
         ]);
+        $response->cookie('auth_token', $token, 60 * 24 * 7, '/', null, request()->secure(), true, false, 'lax');
+        return $response;
     }
 
     /**
@@ -94,8 +106,10 @@ class AuthController extends Controller
     {
         $request->user()->currentAccessToken()->delete();
 
-        return response()->json([
+        $response = response()->json([
             'message' => 'Logged out successfully',
         ]);
+        $response->withCookie(cookie()->forget('auth_token'));
+        return $response;
     }
 }

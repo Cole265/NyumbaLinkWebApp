@@ -4,30 +4,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Property Details - NyumbaLink Malawi</title>
+    <title>Property Details - Khomolanu Malawi</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body class="bg-gray-50" x-data="propertyDetail()">
     
     {{-- Navigation --}}
-    <nav class="bg-white shadow-sm sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
-                <a href="/" class="flex items-center space-x-2">
-                    <div class="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-lg flex items-center justify-center">
-                        <span class="text-white font-bold text-xl">NL</span>
-                    </div>
-                    <span class="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                        NyumbaLink
-                    </span>
-                </a>
-                <div class="flex items-center space-x-4">
-                    <a href="/properties" class="text-gray-700 hover:text-blue-600">← Back to Properties</a>
-                </div>
-            </div>
-        </div>
-    </nav>
+    @include('partials.nav')
 
     {{-- Loading State --}}
     <div x-show="loading" class="flex items-center justify-center min-h-screen">
@@ -45,11 +29,62 @@
             <a href="/properties" class="text-blue-600 hover:text-blue-700 font-semibold flex items-center">
                 ← Back to Search
             </a>
-            <button class="text-gray-600 hover:text-gray-800">
+            <div class="flex items-center gap-3">
+                {{-- Favorite (tenants only) --}}
+                <template x-if="canShowFavorite">
+                    <button type="button" @click="toggleFavorite()"
+                        class="p-2 rounded-lg transition flex items-center gap-2"
+                        :class="isFavorited ? 'bg-red-100 text-red-600 hover:bg-red-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+                        :title="isFavorited ? 'Remove from saved' : 'Save property'">
+                        <svg class="w-6 h-6" :class="isFavorited ? 'fill-current' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                        </svg>
+                        <span class="text-sm font-medium" x-text="isFavorited ? 'Saved' : 'Save'"></span>
+                    </button>
+                </template>
+            <div class="relative flex items-center gap-2" x-data="shareProperty()">
+                <button @click="copyLink()" class="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition" title="Copy link">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                    </svg>
+                </button>
+                <button @click="shareNative()" class="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition" title="Share">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
+                    </svg>
+                </button>
+                <div x-show="copySuccess" x-cloak class="absolute top-12 right-0 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm z-50">
+                    Link copied!
+                </div>
+            </div>
+            <button type="button" @click="showReportModal = true"
+                class="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition flex items-center gap-2"
+                title="Report this listing">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"/>
                 </svg>
+                <span class="text-sm font-medium">Report</span>
             </button>
+            </div>
+        </div>
+
+        {{-- Report modal --}}
+        <div x-show="showReportModal" x-cloak class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" @click.self="showReportModal = false">
+            <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6" @click.stop>
+                <h3 class="text-xl font-bold text-gray-900 mb-2">Report this listing</h3>
+                <p class="text-gray-600 text-sm mb-4">Please describe why you're reporting this property (e.g. misleading info, inappropriate content). Our team will review it.</p>
+                <p x-show="reportError" class="text-red-600 text-sm mb-2" x-text="reportError"></p>
+                <p x-show="reportSuccess" class="text-green-600 text-sm mb-2" x-text="reportSuccess"></p>
+                <textarea x-model="reportReason" rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-4" placeholder="Describe the issue (min 10 characters)..."></textarea>
+                <div class="flex gap-3">
+                    <button type="button" @click="showReportModal = false" class="flex-1 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium">Cancel</button>
+                    <button type="button" @click="submitReport()" :disabled="reportReason.length < 10 || sendingReport"
+                        class="flex-1 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span x-show="!sendingReport">Submit report</span>
+                        <span x-show="sendingReport">Sending...</span>
+                    </button>
+                </div>
+            </div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -148,7 +183,7 @@
                     </div>
 
                     {{-- Property Stats --}}
-                    <div class="grid grid-cols-3 gap-4 p-6 bg-gray-50 rounded-xl">
+                    <div id="property-ratings-section" class="grid grid-cols-3 gap-4 p-6 bg-gray-50 rounded-xl mb-4">
                         <div class="text-center">
                             <div class="text-3xl font-bold text-blue-600" x-text="property.total_views || 0"></div>
                             <div class="text-sm text-gray-600">Views</div>
@@ -158,8 +193,62 @@
                             <div class="text-sm text-gray-600">Inquiries</div>
                         </div>
                         <div class="text-center">
-                            <div class="text-3xl font-bold text-blue-600" x-text="property.landlord_rating || 'N/A'"></div>
-                            <div class="text-sm text-gray-600">Landlord Rating</div>
+                            <div class="flex items-center justify-center space-x-1">
+                                <span class="text-3xl font-bold text-blue-600" x-text="property.landlord_rating ? Number(property.landlord_rating).toFixed(1) : 'N/A'"></span>
+                                <span class="text-yellow-500" x-show="property.landlord_rating">⭐</span>
+                            </div>
+                            <button
+                                type="button"
+                                @click="openRatingsModal()"
+                                class="mt-1 text-sm text-blue-600 hover:text-blue-800 underline"
+                                x-show="property.landlord_rating"
+                            >
+                                <span x-show="!ratingsLoaded">View ratings</span>
+                                <span x-show="ratingsLoaded && ratings.length > 0">
+                                    View all <span x-text="ratings.length"></span> ratings
+                                </span>
+                            </button>
+                            <div class="text-sm text-gray-600" x-show="!property.landlord_rating">
+                                No ratings yet
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Ratings List --}}
+                    <div class="mt-4">
+                        <div x-show="loadingRatings" class="py-4 text-center text-gray-500">
+                            <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mb-2"></div>
+                            <p class="text-sm">Loading ratings...</p>
+                        </div>
+
+                        <div x-show="ratingsLoaded && !loadingRatings && ratings.length === 0" class="py-2 text-center text-gray-500 text-sm">
+                            <p>No ratings found for this property yet.</p>
+                        </div>
+
+                        <div x-show="!loadingRatings && ratings.length > 0" class="space-y-3">
+                            <template x-for="rating in ratings" :key="rating.id">
+                                <div class="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <p class="text-xs text-gray-600">
+                                                Tenant:
+                                                <span class="font-medium text-gray-900" x-text="rating.tenant_name"></span>
+                                            </p>
+                                            <p class="text-[11px] text-gray-400" x-text="new Date(rating.created_at).toLocaleDateString()"></p>
+                                        </div>
+                                        <div class="flex items-center space-x-1 text-yellow-500 text-xs">
+                                            <template x-for="i in 5">
+                                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"
+                                                     :class="i <= Math.round(rating.overall_rating) ? '' : 'text-gray-300'">
+                                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.802 2.035a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118L12 14.347l-2.802 2.035a1 1 0 00-1.175 0l-2.802-2.035c-.784.57-1.838-.197-1.54-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.462a1 1 0 00.95-.69l1.07-3.292z"/>
+                                                </svg>
+                                            </template>
+                                            <span class="ml-1 text-gray-700 text-xs" x-text="Number(rating.overall_rating).toFixed(1)"></span>
+                                        </div>
+                                    </div>
+                                    <p class="mt-2 text-xs text-gray-700" x-text="rating.review || 'No written review.'"></p>
+                                </div>
+                            </template>
                         </div>
                     </div>
                 </div>
@@ -252,6 +341,18 @@
         </div>
     </div>
 
+    {{-- Error State --}}
+    <div x-show="!loading && !property && error" class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div class="bg-white rounded-2xl shadow-lg border border-red-100 p-8 text-center">
+            <div class="text-5xl mb-4">😕</div>
+            <h2 class="text-2xl font-bold text-gray-900 mb-2">Property not available</h2>
+            <p class="text-gray-600 mb-4" x-text="error"></p>
+            <a href="/properties" class="inline-flex items-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-indigo-700 font-semibold shadow">
+                ← Back to Properties
+            </a>
+        </div>
+    </div>
+
     {{-- Inquiry Modal --}}
     <div 
         x-show="showInquiryModal" 
@@ -316,14 +417,113 @@
                 sendingInquiry: false,
                 inquiryError: '',
                 inquirySuccess: '',
+                error: '',
+                ratings: [],
+                loadingRatings: false,
+                ratingsLoaded: false,
+                canShowFavorite: false,
+                isFavorited: false,
+                showReportModal: false,
+                reportReason: '',
+                reportError: '',
+                reportSuccess: '',
+                sendingReport: false,
 
                 async init() {
                     const propertyId = window.location.pathname.split('/').pop();
                     await this.loadProperty(propertyId);
-                    this.incrementView(propertyId);
+                    if (this.property && this.property.status === 'published') {
+                        this.incrementView(propertyId);
+                    }
+                    const token = localStorage.getItem('auth_token');
+                    if (token && this.property) await this.loadFavoriteState(this.property.id);
+                },
+
+                async loadFavoriteState(propertyId) {
+                    const token = localStorage.getItem('auth_token');
+                    if (!token) return;
+                    try {
+                        const response = await fetch('/api/v1/tenant/favorites/ids', {
+                            headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+                        });
+                        if (response.ok) {
+                            const data = await response.json();
+                            const ids = (data.data || data.ids || []) || [];
+                            this.canShowFavorite = true;
+                            this.isFavorited = ids.includes(Number(propertyId)) || ids.includes(String(propertyId));
+                        }
+                    } catch (e) {
+                        this.canShowFavorite = false;
+                    }
+                },
+
+                async toggleFavorite() {
+                    const token = localStorage.getItem('auth_token');
+                    if (!token || !this.property) return;
+                    const id = this.property.id;
+                    const isFav = this.isFavorited;
+                    try {
+                        const url = `/api/v1/tenant/favorites${isFav ? `/${id}` : ''}`;
+                        const options = {
+                            method: isFav ? 'DELETE' : 'POST',
+                            headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+                        };
+                        if (!isFav) options.headers['Content-Type'] = 'application/json';
+                        if (!isFav) options.body = JSON.stringify({ property_id: id });
+                        const response = await fetch(url, options);
+                        const data = await response.json();
+                        if (response.ok && data.success) {
+                            this.isFavorited = !this.isFavorited;
+                        }
+                    } catch (e) {
+                        console.error('Toggle favorite failed:', e);
+                    }
+                },
+
+                async openRatingsModal() {
+                    if (!this.property) return;
+                    await this.loadRatings(this.property.id);
+                    // For now we just scroll to the stats / could open a modal later
+                    const statsSection = document.getElementById('property-ratings-section');
+                    if (statsSection) {
+                        statsSection.scrollIntoView({ behavior: 'smooth' });
+                    }
+                },
+
+                async loadRatings(propertyId) {
+                    this.loadingRatings = true;
+                    try {
+                        const response = await fetch(`/api/v1/properties/${propertyId}/ratings`, {
+                            headers: { 'Accept': 'application/json' },
+                        });
+
+                        const data = await response.json();
+                        if (data.success && data.data) {
+                            const collection = Array.isArray(data.data)
+                                ? data.data
+                                : (data.data.data || []);
+
+                            this.ratings = collection.map(r => ({
+                                id: r.id,
+                                tenant_name: r.tenant_name,
+                                landlord_name: r.landlord_name,
+                                overall_rating: r.overall_rating,
+                                review: r.review,
+                                created_at: r.created_at,
+                            }));
+                        }
+                    } catch (error) {
+                        console.error('Error loading property ratings:', error);
+                        this.ratings = [];
+                    } finally {
+                        this.loadingRatings = false;
+                        this.ratingsLoaded = true;
+                    }
                 },
 
                 async loadProperty(id) {
+                    this.error = '';
+                    // Try public endpoint first (published properties)
                     try {
                         const response = await fetch(`/api/v1/properties/${id}`, {
                             headers: { 'Accept': 'application/json' }
@@ -335,12 +535,53 @@
                             this.property = data.data;
                             this.currentImage = this.property.primary_image_url || 
                                 (this.property.formatted_images && this.property.formatted_images[0]?.url);
+                            this.loading = false;
+                            return;
                         }
                     } catch (error) {
-                        console.error('Error loading property:', error);
-                    } finally {
-                        this.loading = false;
+                        console.error('Error loading public property:', error);
                     }
+
+                    // Fallback: if logged in landlord, try landlord-specific endpoint (works for drafts/pending)
+                    const token = localStorage.getItem('auth_token');
+                    if (token) {
+                        try {
+                            const response = await fetch(`/api/v1/landlord/properties/${id}`, {
+                                headers: {
+                                    'Accept': 'application/json',
+                                    'Authorization': `Bearer ${token}`
+                                }
+                            });
+
+                            const data = await response.json();
+
+                            if (response.ok && data.success) {
+                                this.property = data.data;
+
+                                // Compute basic image URLs if API did not provide them
+                                if (!this.property.primary_image_url && this.property.images && this.property.images.length > 0) {
+                                    const primary = this.property.images.find(img => img.is_primary) || this.property.images[0];
+                                    this.property.primary_image_url = primary ? `/storage/${primary.image_path}` : null;
+                                    this.property.formatted_images = this.property.images.map(img => ({
+                                        id: img.id,
+                                        url: `/storage/${img.image_path}`,
+                                        is_primary: img.is_primary
+                                    }));
+                                }
+
+                                this.currentImage = this.property.primary_image_url || 
+                                    (this.property.formatted_images && this.property.formatted_images[0]?.url);
+
+                                this.loading = false;
+                                return;
+                            }
+                        } catch (error) {
+                            console.error('Error loading landlord property:', error);
+                        }
+                    }
+
+                    this.error = 'This property could not be found or is not yet available to view.';
+                    this.loading = false;
                 },
 
                 async incrementView(id) {
@@ -351,6 +592,47 @@
                         });
                     } catch (error) {
                         console.error('Error incrementing view:', error);
+                    }
+                },
+
+                async submitReport() {
+                    if (!this.property || this.reportReason.trim().length < 10) return;
+                    const token = localStorage.getItem('auth_token');
+                    if (!token) {
+                        this.reportError = 'Please log in to submit a report.';
+                        return;
+                    }
+                    this.sendingReport = true;
+                    this.reportError = '';
+                    this.reportSuccess = '';
+                    try {
+                        const response = await fetch('/api/v1/report-property', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({
+                                property_id: this.property.id,
+                                reason: this.reportReason.trim()
+                            })
+                        });
+                        const data = await response.json();
+                        if (response.ok && data.success) {
+                            this.reportSuccess = 'Report submitted. Our team will review it.';
+                            this.reportReason = '';
+                            setTimeout(() => {
+                                this.showReportModal = false;
+                                this.reportSuccess = '';
+                            }, 2000);
+                        } else {
+                            this.reportError = data.message || 'Failed to submit report.';
+                        }
+                    } catch (e) {
+                        this.reportError = 'An error occurred. Please try again.';
+                    } finally {
+                        this.sendingReport = false;
                     }
                 },
 
@@ -399,6 +681,65 @@
                         this.inquiryError = 'An error occurred. Please try again.';
                     } finally {
                         this.sendingInquiry = false;
+                    }
+                }
+            }
+        }
+
+        function shareProperty() {
+            return {
+                copySuccess: false,
+                getPropertyUrl() {
+                    return window.location.href;
+                },
+                getPropertyTitle() {
+                    const titleEl = document.querySelector('[x-text*="property.title"]');
+                    return titleEl ? titleEl.textContent.trim() : 'Check out this property on Khomolanu';
+                },
+                async shareNative() {
+                    const url = this.getPropertyUrl();
+                    const title = this.getPropertyTitle();
+                    if (navigator.share) {
+                        try {
+                            await navigator.share({
+                                title: title,
+                                text: `Check out this property: ${title}`,
+                                url: url
+                            });
+                        } catch (err) {
+                            if (err.name !== 'AbortError') {
+                                this.copyLink();
+                            }
+                        }
+                    } else {
+                        this.copyLink();
+                    }
+                },
+                async copyLink() {
+                    const url = this.getPropertyUrl();
+                    try {
+                        await navigator.clipboard.writeText(url);
+                        this.copySuccess = true;
+                        setTimeout(() => {
+                            this.copySuccess = false;
+                        }, 2000);
+                    } catch (err) {
+                        const textarea = document.createElement('textarea');
+                        textarea.value = url;
+                        textarea.style.position = 'fixed';
+                        textarea.style.opacity = '0';
+                        document.body.appendChild(textarea);
+                        textarea.select();
+                        try {
+                            document.execCommand('copy');
+                            this.copySuccess = true;
+                            setTimeout(() => {
+                                this.copySuccess = false;
+                            }, 2000);
+                        } catch (e) {
+                            alert('Failed to copy link. Please copy manually: ' + url);
+                        }
+                        document.body.removeChild(textarea);
                     }
                 }
             }

@@ -11,6 +11,8 @@ use App\Models\Transaction;
 use App\Models\Inquiry;
 use App\Models\Rating;
 use App\Models\VerificationRequest;
+use App\Models\ContactMessage;
+use App\Models\Report;
 use Illuminate\Http\Request;
 use App\Notifications\PropertyApproved;
 use App\Notifications\PropertyRejected;
@@ -97,6 +99,12 @@ class DashboardController extends Controller
                 'rejected' => VerificationRequest::where('status', 'rejected')->count(),
             ],
 
+            // Reports
+            'reports' => [
+                'pending' => Report::where('status', 'pending')->count(),
+                'total' => Report::count(),
+            ],
+
             // City breakdown
             'cities' => Property::select('city', DB::raw('count(*) as count'))
                 ->where('status', 'published')
@@ -140,6 +148,99 @@ class DashboardController extends Controller
         return response()->json([
             'success' => true,
             'data' => $properties,
+        ]);
+    }
+
+    /**
+     * Get a single property by ID (for admin view modal - any status)
+     */
+    public function showProperty(Property $property)
+    {
+        $property->load(['landlord.user', 'images', 'amenities', 'listing', 'activeBoost']);
+        $property->landlord_name = $property->landlord->user->name ?? null;
+        $property->landlord_verified = $property->landlord->isVerified();
+        $property->total_views = $property->listing?->view_count ?? 0;
+        $property->total_inquiries = $property->listing?->inquiry_count ?? 0;
+        $property->formatted_images = $property->images->map(function ($image) {
+            return [
+                'id' => $image->id,
+                'url' => asset('storage/' . $image->image_path),
+                'is_primary' => $image->is_primary,
+            ];
+        });
+        return response()->json([
+            'success' => true,
+            'data' => $property,
+        ]);
+    }
+
+    /**
+     * Get property reports (flags) for admin review
+     */
+    public function reports(Request $request)
+    {
+        $status = $request->get('status', 'pending');
+
+        $reports = Report::with(['user', 'property.primaryImage'])
+            ->when($status !== 'all', function ($query) use ($status) {
+                $query->where('status', $status);
+            })
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+
+        $reports->getCollection()->transform(function ($report) {
+            $report->reporter_name = $report->user->name ?? null;
+            $report->property_title = $report->property->title ?? null;
+            $report->property_url = url("/properties/{$report->property_id}");
+            $report->primary_image_url = $report->property->primaryImage
+                ? asset('storage/' . $report->property->primaryImage->image_path)
+                : null;
+            return $report;
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => $reports,
+        ]);
+    }
+
+    /**
+     * Mark report as reviewed
+     */
+    public function reportReview(Report $report)
+    {
+        $report->update(['status' => 'reviewed']);
+        return response()->json([
+            'success' => true,
+            'message' => 'Report marked as reviewed',
+            'data' => $report->fresh(),
+        ]);
+    }
+
+    /**
+     * Dismiss report
+     */
+    public function reportDismiss(Report $report)
+    {
+        $report->update(['status' => 'dismissed']);
+        return response()->json([
+            'success' => true,
+            'message' => 'Report dismissed',
+            'data' => $report->fresh(),
+        ]);
+    }
+
+    /**
+     * Get contact messages sent from the public contact form
+     */
+    public function contactMessages()
+    {
+        $messages = ContactMessage::orderByDesc('created_at')
+            ->paginate(20);
+
+        return response()->json([
+            'success' => true,
+            'data' => $messages,
         ]);
     }
 
@@ -216,7 +317,7 @@ class DashboardController extends Controller
 
         $property->update([
             'status' => 'draft',
-            // TODO: Store rejection reason in a separate field or notes table
+            'rejection_reason' => $validated['reason'],
         ]);
 
         $property->landlord->user->notify(new PropertyRejected(
@@ -289,9 +390,13 @@ class DashboardController extends Controller
             'reason' => 'required|string|max:500',
         ]);
 
-        // TODO: Add is_suspended field to users table and implement suspension logic
-        // For now, just mark as unverified
-        $user->update(['is_verified' => false]);
+        $user->update([
+            'is_suspended' => true,
+            'suspended_at' => now(),
+            'suspension_reason' => $validated['reason'],
+        ]);
+
+        $user->tokens()->delete();
 
         return response()->json([
             'success' => true,
@@ -310,6 +415,7 @@ class DashboardController extends Controller
             'total_properties' => Property::count(),
             'pending_verifications' => VerificationRequest::where('status', 'pending')->count(),
             'pending_properties' => Property::where('status', 'pending_review')->count(),
+            'pending_reports' => Report::where('status', 'pending')->count(),
             'total_revenue' => Transaction::where('status', 'completed')->sum('amount'),
         ];
     }

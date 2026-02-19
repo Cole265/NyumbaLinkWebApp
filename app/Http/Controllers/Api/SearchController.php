@@ -38,6 +38,7 @@ class SearchController extends Controller
                 'activeBoost'
             ])
             ->where('status', 'published')
+            ->whereDoesntHave('activeTenancy') // Exclude rented properties
             ->whereHas('listing', function ($q) {
                 $q->where('is_active', true)
                   ->where('expiry_date', '>=', now());

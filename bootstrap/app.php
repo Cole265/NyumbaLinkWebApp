@@ -12,9 +12,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+    $middleware->encryptCookies(except: [
+        'auth_token',
+    ]);
     $middleware->alias([
         'verified.landlord' => \App\Http\Middleware\EnsureLandlordVerified::class,
         'role' => \App\Http\Middleware\CheckRole::class,
+        'web.auth' => \App\Http\Middleware\EnsureWebAuth::class,
     ]);
 })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -3,12 +3,13 @@
 
 namespace App\Models;
 
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     use HasApiTokens, HasFactory, Notifiable;
 
@@ -19,6 +20,9 @@ class User extends Authenticatable
         'password',
         'role',
         'is_verified',
+        'is_suspended',
+        'suspended_at',
+        'suspension_reason',
     ];
 
     protected $hidden = [
@@ -29,6 +33,8 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'is_verified' => 'boolean',
+        'is_suspended' => 'boolean',
+        'suspended_at' => 'datetime',
         'password' => 'hashed',
     ];
 
@@ -61,6 +67,26 @@ class User extends Authenticatable
     public function inquiries()
     {
         return $this->hasMany(Inquiry::class, 'tenant_id');
+    }
+
+    public function tenancies()
+    {
+        return $this->hasMany(Tenancy::class, 'tenant_id');
+    }
+
+    public function favorites()
+    {
+        return $this->hasMany(Favorite::class);
+    }
+
+    public function reports()
+    {
+        return $this->hasMany(Report::class);
+    }
+
+    public function activeTenancy()
+    {
+        return $this->hasOne(Tenancy::class, 'tenant_id')->where('status', 'active');
     }
 
     // Helper methods

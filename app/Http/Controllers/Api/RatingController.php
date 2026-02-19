@@ -204,6 +204,78 @@ class RatingController extends Controller
     }
 
     /**
+     * Get ratings for the authenticated landlord (landlord dashboard)
+     */
+    public function myLandlordRatings(Request $request)
+    {
+        $landlord = $request->user()->landlordProfile;
+
+        if (!$landlord) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Landlord profile not found',
+            ], 404);
+        }
+
+        $ratings = Rating::with([
+            'tenant.user',
+            'property',
+        ])
+        ->where('landlord_id', $landlord->id)
+        ->orderBy('created_at', 'desc')
+        ->paginate(20);
+
+        // Reuse the same transformation as landlordRatings
+        $ratings->getCollection()->transform(function ($rating) {
+            $rating->tenant_name = $rating->tenant->user->name;
+            $rating->property_title = $rating->property->title;
+
+            // Hide tenant's full contact info for privacy
+            unset($rating->tenant->user->email);
+            unset($rating->tenant->user->phone);
+
+            return $rating;
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => $ratings,
+            'landlord_info' => [
+                'name' => $landlord->user->name,
+                'business_name' => $landlord->business_name,
+                'avg_rating' => $landlord->avg_rating,
+                'total_ratings' => $landlord->total_ratings,
+                'verified' => $landlord->isVerified(),
+            ],
+        ]);
+    }
+
+    /**
+     * Get all ratings for a specific property (public, property details page)
+     */
+    public function propertyRatings($propertyId)
+    {
+        $ratings = Rating::with([
+            'tenant.user',
+            'landlord.user',
+        ])
+        ->where('property_id', $propertyId)
+        ->orderBy('created_at', 'desc')
+        ->paginate(20);
+
+        $ratings->getCollection()->transform(function ($rating) {
+            $rating->tenant_name = $rating->tenant->user->name;
+            $rating->landlord_name = $rating->landlord->user->name;
+            return $rating;
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => $ratings,
+        ]);
+    }
+
+    /**
      * Get rating statistics for a landlord
      */
     public function landlordRatingStats($landlordId)

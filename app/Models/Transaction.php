@@ -41,7 +41,7 @@ class Transaction extends Model
     {
         static::creating(function ($transaction) {
             if (!$transaction->reference_number) {
-                $transaction->reference_number = 'NL-' . strtoupper(Str::random(10));
+                $transaction->reference_number = 'KL-' . strtoupper(Str::random(10));
             }
         });
     }
