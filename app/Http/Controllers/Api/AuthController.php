@@ -68,6 +68,7 @@ class AuthController extends Controller
         $request->validate([
             'email' => 'required|email',
             'password' => 'required',
+            'two_factor_code' => 'nullable|string',
         ]);
 
         $user = User::where('email', $request->email)->first();
@@ -82,6 +83,25 @@ class AuthController extends Controller
             throw ValidationException::withMessages([
                 'email' => ['Your account has been suspended. Please contact support.'],
             ]);
+        }
+
+        if ($user->two_factor_confirmed_at) {
+            $code = $request->input('two_factor_code');
+
+            if (!$code) {
+                return response()->json([
+                    'requires_two_factor' => true,
+                    'message' => 'Two-factor authentication code required.',
+                ], 423);
+            }
+
+            $twoFactor = app(\App\Http\Controllers\Api\TwoFactorController::class);
+
+            if (!$twoFactor->verifyDuringLogin($user, $code)) {
+                throw ValidationException::withMessages([
+                    'two_factor_code' => ['The provided two-factor code is invalid.'],
+                ]);
+            }
         }
 
         // Delete old tokens

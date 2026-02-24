@@ -107,12 +107,11 @@ class VerificationController extends Controller
 
             DB::commit();
 
+            // Notify landlord via configured notification channels (mail + database)
             $verification->user->notify(new VerificationApproved(
                 $verification->user->name,
                 $validated['admin_notes'] ?? null
-            )); 
-
-            // TODO: Send notification to landlord (email/SMS)
+            ));
 
             return response()->json([
                 'success' => true,
@@ -157,12 +156,11 @@ class VerificationController extends Controller
 
             DB::commit();
 
+            // Notify landlord via configured notification channels (mail + database)
             $verification->user->notify(new VerificationRejected(
                 $verification->user->name,
                 $validated['admin_notes']
             ));
-
-            // TODO: Send notification to landlord with rejection reason
 
             return response()->json([
                 'success' => true,

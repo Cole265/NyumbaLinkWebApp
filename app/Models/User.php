@@ -28,6 +28,8 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $hidden = [
         'password',
         'remember_token',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
     ];
 
     protected $casts = [
@@ -36,6 +38,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'is_suspended' => 'boolean',
         'suspended_at' => 'datetime',
         'password' => 'hashed',
+        'two_factor_confirmed_at' => 'datetime',
     ];
 
     // Relationships

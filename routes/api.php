@@ -11,8 +11,10 @@ use App\Http\Controllers\Api\InquiryController;
 use App\Http\Controllers\Api\RatingController;
 use App\Http\Controllers\Api\LandlordController;
 use App\Http\Controllers\Api\TenantController;
+use App\Http\Controllers\Api\TwoFactorController;
 use App\Http\Controllers\Api\Admin\VerificationController;
 use App\Http\Controllers\Api\Admin\DashboardController;
+use App\Http\Controllers\Api\Admin\AdminAccountController;
 use App\Http\Controllers\Api\NotificationController;
 
 /*
@@ -22,12 +24,6 @@ use App\Http\Controllers\Api\NotificationController;
 */
 
 // Public routes (no authentication required)
-
-Route::get('/test', function () {
-    return response()->json(['message' => 'API is working!']);
-});
-
-Route::post('/login-test', [AuthController::class, 'login']);
 
 Route::prefix('v1')->group(function () {
     
@@ -43,6 +39,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/properties', [SearchController::class, 'index']);
     // More specific routes must come before the generic /properties/{id}
     Route::get('/properties/{id}/ratings', [RatingController::class, 'propertyRatings']);
+    Route::get('/properties/{id}/similar', [SearchController::class, 'similar']);
     Route::post('/properties/{id}/view', [SearchController::class, 'incrementView']);
     Route::get('/properties/{id}', [SearchController::class, 'show']);
     
@@ -140,9 +137,26 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::post('/favorites', [\App\Http\Controllers\Api\FavoriteController::class, 'store']);
         Route::delete('/favorites/{propertyId}', [\App\Http\Controllers\Api\FavoriteController::class, 'destroy']);
     });
+
+    // ============ TWO FACTOR AUTH ============
+    Route::prefix('two-factor')->group(function () {
+        Route::get('/', [TwoFactorController::class, 'show']);
+        Route::post('/enable', [TwoFactorController::class, 'enable']);
+        Route::post('/confirm', [TwoFactorController::class, 'confirm']);
+        Route::post('/disable', [TwoFactorController::class, 'disable']);
+    });
     
     // ============ ADMIN ROUTES ============
     Route::middleware(['role:admin'])->prefix('admin')->group(function () {
+
+        // Admin own account: profile, update profile, change password
+        Route::get('/profile', [AdminAccountController::class, 'profile']);
+        Route::put('/profile', [AdminAccountController::class, 'updateProfile']);
+        Route::put('/password', [AdminAccountController::class, 'updatePassword']);
+
+        // Admin: update other users' info and reset their password
+        Route::put('/users/{user}', [AdminAccountController::class, 'updateUser']);
+        Route::put('/users/{user}/password', [AdminAccountController::class, 'resetUserPassword']);
         
         // Dashboard
         Route::get('/dashboard', [DashboardController::class, 'index']);

@@ -12,5 +12,9 @@ class ContactMessage extends Model
         'subject',
         'message',
         'ip_address',
+        'status',
+        'handled_at',
+        'handled_by',
+        'admin_notes',
     ];
 }

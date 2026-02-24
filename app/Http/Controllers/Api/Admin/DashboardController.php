@@ -276,9 +276,8 @@ class DashboardController extends Controller
 
             DB::commit();
 
+            // Notify landlord via configured notification channels (mail + database)
             $property->landlord->user->notify(new PropertyApproved($property));
-
-            // TODO: Send notification to landlord
 
             return response()->json([
                 'success' => true,
