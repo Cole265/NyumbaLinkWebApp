@@ -205,6 +205,49 @@ class SearchController extends Controller
     }
 
     /**
+     * Get similar properties (same city and/or type, excluding current, limit 4)
+     */
+    public function similar($id)
+    {
+        $current = Property::where('status', 'published')->find($id);
+        if (!$current) {
+            return response()->json(['success' => true, 'data' => []]);
+        }
+
+        $query = Property::query()
+            ->with(['landlord.user', 'primaryImage', 'listing'])
+            ->where('status', 'published')
+            ->where('id', '!=', $id)
+            ->whereDoesntHave('activeTenancy')
+            ->whereHas('listing', function ($q) {
+                $q->where('is_active', true)->where('expiry_date', '>=', now());
+            });
+
+        // Prefer same city, then same property_type
+        $query->where(function ($q) use ($current) {
+            $q->where('city', $current->city)
+              ->orWhere('property_type', $current->property_type);
+        });
+
+        $properties = $query->orderBy('created_at', 'desc')
+            ->limit(4)
+            ->get();
+
+        $properties->transform(function ($property) {
+            $property->primary_image_url = $property->primaryImage
+                ? asset('storage/' . $property->primaryImage->image_path)
+                : null;
+            $property->landlord_name = $property->landlord->user->name ?? null;
+            return $property;
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => $properties,
+        ]);
+    }
+
+    /**
      * Increment property view count
      */
     public function incrementView($id)

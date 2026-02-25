@@ -338,6 +338,23 @@
                     </div>
                 </div>
             </div>
+
+            {{-- Similar Properties --}}
+            <div x-show="similarProperties.length > 0" class="mt-16 pt-12 border-t border-gray-200">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6">Similar properties</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <template x-for="p in similarProperties" :key="p.id">
+                        <a :href="`/properties/${p.id}`" class="block bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition border border-gray-100">
+                            <img :src="p.primary_image_url || 'https://placehold.co/400x250/e2e8f0/64748b?text=No+Image'" class="w-full h-48 object-cover" :alt="p.title">
+                            <div class="p-4">
+                                <h3 class="font-bold text-gray-900 line-clamp-1" x-text="p.title"></h3>
+                                <p class="text-sm text-gray-600 mt-1" x-text="`${p.area || p.district || ''}, ${p.city}`"></p>
+                                <p class="text-lg font-bold text-blue-600 mt-2">MWK <span x-text="Number(p.price).toLocaleString()"></span></p>
+                            </div>
+                        </a>
+                    </template>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -428,15 +445,27 @@
                 reportError: '',
                 reportSuccess: '',
                 sendingReport: false,
+                similarProperties: [],
 
                 async init() {
                     const propertyId = window.location.pathname.split('/').pop();
                     await this.loadProperty(propertyId);
                     if (this.property && this.property.status === 'published') {
                         this.incrementView(propertyId);
+                        this.loadSimilar(propertyId);
                     }
                     const token = localStorage.getItem('auth_token');
                     if (token && this.property) await this.loadFavoriteState(this.property.id);
+                },
+
+                async loadSimilar(propertyId) {
+                    try {
+                        const response = await fetch(`/api/v1/properties/${propertyId}/similar`, { headers: { 'Accept': 'application/json' } });
+                        const result = await response.json();
+                        if (result.success && result.data) this.similarProperties = result.data;
+                    } catch (e) {
+                        this.similarProperties = [];
+                    }
                 },
 
                 async loadFavoriteState(propertyId) {

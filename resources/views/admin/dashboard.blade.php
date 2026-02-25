@@ -90,6 +90,15 @@
                         </svg>
                         <span x-show="sidebarOpen">Contact Messages</span>
                     </button>
+
+                    <button @click="currentTab = 'account'" 
+                            :class="currentTab === 'account' ? 'bg-blue-700' : 'hover:bg-blue-700'"
+                            class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                        </svg>
+                        <span x-show="sidebarOpen">My Account</span>
+                    </button>
                 </nav>
 
                 <div x-show="sidebarOpen" class="mt-auto">
@@ -523,6 +532,20 @@
                                                         Suspended
                                                     </span>
                                                     <button
+                                                        type="button"
+                                                        @click="openEditUser(user)"
+                                                        class="px-3 py-1 bg-gray-600 text-white rounded-lg text-xs hover:bg-gray-700"
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        @click="openResetPasswordModal(user)"
+                                                        class="px-3 py-1 bg-blue-600 text-white rounded-lg text-xs hover:bg-blue-700"
+                                                    >
+                                                        Reset password
+                                                    </button>
+                                                    <button
                                                         x-show="user.role !== 'admin' && !user.is_suspended"
                                                         @click="suspendUser(user)"
                                                         class="px-3 py-1 bg-red-600 text-white rounded-lg text-xs hover:bg-red-700"
@@ -535,6 +558,59 @@
                                     </template>
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+
+                    {{-- Edit user modal --}}
+                    <div x-show="showEditUserModal" x-cloak class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" @click.self="showEditUserModal = false">
+                        <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-6" @click.stop>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Edit user</h3>
+                            <template x-if="editUser">
+                                <form @submit.prevent="saveEditUser()" class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                                        <input type="text" x-model="editUserForm.name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                        <input type="email" x-model="editUserForm.email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                                        <input type="text" x-model="editUserForm.phone" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                    <p x-show="editUserMessage" class="text-sm" :class="editUserError ? 'text-red-600' : 'text-green-600'" x-text="editUserMessage"></p>
+                                    <div class="flex gap-2">
+                                        <button type="button" @click="showEditUserModal = false" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Cancel</button>
+                                        <button type="submit" :disabled="editUserSaving" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">Save</button>
+                                    </div>
+                                </form>
+                            </template>
+                        </div>
+                    </div>
+
+                    {{-- Reset password modal --}}
+                    <div x-show="showResetPasswordModal" x-cloak class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" @click.self="showResetPasswordModal = false">
+                        <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-6" @click.stop>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">Reset password</h3>
+                            <p class="text-sm text-gray-600 mb-4" x-show="resetPasswordUser" x-text="`Set a new password for ${resetPasswordUser?.name || 'this user'}.`"></p>
+                            <template x-if="resetPasswordUser">
+                                <form @submit.prevent="saveResetPassword()" class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">New password</label>
+                                        <input type="password" x-model="resetPasswordForm.password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Min 8 characters" required minlength="8">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Confirm password</label>
+                                        <input type="password" x-model="resetPasswordForm.password_confirmation" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required minlength="8">
+                                    </div>
+                                    <p x-show="resetPasswordMessage" class="text-sm" :class="resetPasswordError ? 'text-red-600' : 'text-green-600'" x-text="resetPasswordMessage"></p>
+                                    <div class="flex gap-2">
+                                        <button type="button" @click="showResetPasswordModal = false" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Cancel</button>
+                                        <button type="submit" :disabled="resetPasswordSaving" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">Reset password</button>
+                                    </div>
+                                </form>
+                            </template>
                         </div>
                     </div>
                 </div>
@@ -816,12 +892,156 @@
                         </div>
                     </div>
                 </div>
+
+                {{-- My Account Tab --}}
+                <div x-show="currentTab === 'account'" x-cloak x-data="adminAccount()" x-init="loadProfile()">
+                    <div class="max-w-2xl space-y-6">
+                        <div class="bg-white rounded-xl shadow-sm p-6">
+                            <h2 class="text-xl font-semibold text-gray-900 mb-4">Personal information</h2>
+                            <div x-show="profileLoading" class="py-4 text-center text-gray-500">
+                                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                            </div>
+                            <form x-show="!profileLoading && user" @submit.prevent="updateProfile()" class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                                    <input type="text" x-model="profileForm.name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Your name">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                    <input type="email" x-model="profileForm.email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="admin@example.com">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                                    <input type="text" x-model="profileForm.phone" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="+265...">
+                                </div>
+                                <p x-show="profileMessage" class="text-sm" :class="profileError ? 'text-red-600' : 'text-green-600'" x-text="profileMessage"></p>
+                                <button type="submit" :disabled="profileSaving" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium">
+                                    <span x-show="!profileSaving">Save changes</span>
+                                    <span x-show="profileSaving">Saving...</span>
+                                </button>
+                            </form>
+                        </div>
+                        <div class="bg-white rounded-xl shadow-sm p-6">
+                            <h2 class="text-xl font-semibold text-gray-900 mb-4">Change password</h2>
+                            <form @submit.prevent="updatePassword()" class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Current password</label>
+                                    <input type="password" x-model="passwordForm.current_password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="••••••••" required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">New password</label>
+                                    <input type="password" x-model="passwordForm.password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="••••••••" required minlength="8">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Confirm new password</label>
+                                    <input type="password" x-model="passwordForm.password_confirmation" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="••••••••" required minlength="8">
+                                </div>
+                                <p x-show="passwordMessage" class="text-sm" :class="passwordError ? 'text-red-600' : 'text-green-600'" x-text="passwordMessage"></p>
+                                <button type="submit" :disabled="passwordSaving" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium">
+                                    <span x-show="!passwordSaving">Update password</span>
+                                    <span x-show="passwordSaving">Updating...</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
 
     <script>
         document.addEventListener('alpine:init', () => {
+            Alpine.data('adminAccount', () => ({
+                user: null,
+                profileLoading: true,
+                profileForm: { name: '', email: '', phone: '' },
+                profileSaving: false,
+                profileMessage: '',
+                profileError: false,
+                passwordForm: { current_password: '', password: '', password_confirmation: '' },
+                passwordSaving: false,
+                passwordMessage: '',
+                passwordError: false,
+
+                async loadProfile() {
+                    this.profileLoading = true;
+                    const token = localStorage.getItem('auth_token');
+                    if (!token) return;
+                    try {
+                        const response = await fetch('/api/v1/admin/profile', {
+                            headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+                        });
+                        const result = await response.json();
+                        if (result.success && result.data && result.data.user) {
+                            this.user = result.data.user;
+                            this.profileForm = {
+                                name: this.user.name || '',
+                                email: this.user.email || '',
+                                phone: this.user.phone || ''
+                            };
+                        }
+                    } catch (e) {
+                        console.error('Load profile error:', e);
+                    } finally {
+                        this.profileLoading = false;
+                    }
+                },
+
+                async updateProfile() {
+                    this.profileSaving = true;
+                    this.profileMessage = '';
+                    this.profileError = false;
+                    const token = localStorage.getItem('auth_token');
+                    try {
+                        const response = await fetch('/api/v1/admin/profile', {
+                            method: 'PUT',
+                            headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                            body: JSON.stringify(this.profileForm)
+                        });
+                        const result = await response.json();
+                        if (response.ok && result.success) {
+                            this.profileMessage = 'Profile updated successfully.';
+                            this.user = result.data;
+                        } else {
+                            this.profileError = true;
+                            this.profileMessage = result.message || 'Failed to update profile.';
+                        }
+                    } catch (e) {
+                        this.profileError = true;
+                        this.profileMessage = 'An error occurred. Please try again.';
+                    } finally {
+                        this.profileSaving = false;
+                    }
+                },
+
+                async updatePassword() {
+                    this.passwordSaving = true;
+                    this.passwordMessage = '';
+                    this.passwordError = false;
+                    const token = localStorage.getItem('auth_token');
+                    try {
+                        const response = await fetch('/api/v1/admin/password', {
+                            method: 'PUT',
+                            headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                            body: JSON.stringify(this.passwordForm)
+                        });
+                        const result = await response.json();
+                        if (response.ok && result.success) {
+                            this.passwordMessage = 'Password updated successfully.';
+                            this.passwordForm = { current_password: '', password: '', password_confirmation: '' };
+                        } else {
+                            this.passwordError = true;
+                            this.passwordMessage = (result.errors && (result.errors.current_password && result.errors.current_password[0])) || result.message || 'Failed to update password.';
+                        }
+                    } catch (e) {
+                        this.passwordError = true;
+                        this.passwordMessage = 'An error occurred. Please try again.';
+                    } finally {
+                        this.passwordSaving = false;
+                    }
+                }
+            }));
+
             Alpine.data('adminProperties', () => ({
                 loading: true,
                 properties: [],
@@ -1031,6 +1251,18 @@
                 loading: false,
                 filterRole: 'all',
                 search: '',
+                showEditUserModal: false,
+                editUser: null,
+                editUserForm: { name: '', email: '', phone: '' },
+                editUserSaving: false,
+                editUserMessage: '',
+                editUserError: false,
+                showResetPasswordModal: false,
+                resetPasswordUser: null,
+                resetPasswordForm: { password: '', password_confirmation: '' },
+                resetPasswordSaving: false,
+                resetPasswordMessage: '',
+                resetPasswordError: false,
 
                 get filteredUsers() {
                     let filtered = this.users;
@@ -1166,6 +1398,84 @@
                     } catch (error) {
                         console.error('Error suspending user:', error);
                         alert('An error occurred while suspending the user.');
+                    }
+                },
+
+                openEditUser(user) {
+                    this.editUser = user;
+                    this.editUserForm = { name: user.name || '', email: user.email || '', phone: user.phone || '' };
+                    this.editUserMessage = '';
+                    this.editUserError = false;
+                    this.showEditUserModal = true;
+                },
+
+                async saveEditUser() {
+                    if (!this.editUser) return;
+                    this.editUserSaving = true;
+                    this.editUserMessage = '';
+                    this.editUserError = false;
+                    const token = localStorage.getItem('auth_token');
+                    try {
+                        const response = await fetch(`/api/v1/admin/users/${this.editUser.id}`, {
+                            method: 'PUT',
+                            headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                            body: JSON.stringify(this.editUserForm)
+                        });
+                        const result = await response.json();
+                        if (response.ok && result.success) {
+                            this.editUserMessage = 'User updated successfully.';
+                            Object.assign(this.editUser, this.editUserForm);
+                            setTimeout(() => { this.showEditUserModal = false; }, 1500);
+                        } else {
+                            this.editUserError = true;
+                            this.editUserMessage = result.message || 'Failed to update user.';
+                        }
+                    } catch (e) {
+                        this.editUserError = true;
+                        this.editUserMessage = 'An error occurred. Please try again.';
+                    } finally {
+                        this.editUserSaving = false;
+                    }
+                },
+
+                openResetPasswordModal(user) {
+                    this.resetPasswordUser = user;
+                    this.resetPasswordForm = { password: '', password_confirmation: '' };
+                    this.resetPasswordMessage = '';
+                    this.resetPasswordError = false;
+                    this.showResetPasswordModal = true;
+                },
+
+                async saveResetPassword() {
+                    if (!this.resetPasswordUser || this.resetPasswordForm.password !== this.resetPasswordForm.password_confirmation) {
+                        this.resetPasswordError = true;
+                        this.resetPasswordMessage = 'Passwords do not match.';
+                        return;
+                    }
+                    this.resetPasswordSaving = true;
+                    this.resetPasswordMessage = '';
+                    this.resetPasswordError = false;
+                    const token = localStorage.getItem('auth_token');
+                    try {
+                        const response = await fetch(`/api/v1/admin/users/${this.resetPasswordUser.id}/password`, {
+                            method: 'PUT',
+                            headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ password: this.resetPasswordForm.password, password_confirmation: this.resetPasswordForm.password_confirmation })
+                        });
+                        const result = await response.json();
+                        if (response.ok && result.success) {
+                            this.resetPasswordMessage = 'Password reset successfully.';
+                            this.resetPasswordForm = { password: '', password_confirmation: '' };
+                            setTimeout(() => { this.showResetPasswordModal = false; }, 1500);
+                        } else {
+                            this.resetPasswordError = true;
+                            this.resetPasswordMessage = (result.errors && result.errors.password && result.errors.password[0]) || result.message || 'Failed to reset password.';
+                        }
+                    } catch (e) {
+                        this.resetPasswordError = true;
+                        this.resetPasswordMessage = 'An error occurred. Please try again.';
+                    } finally {
+                        this.resetPasswordSaving = false;
                     }
                 },
             }));

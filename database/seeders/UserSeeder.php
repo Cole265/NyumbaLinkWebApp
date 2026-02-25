@@ -14,21 +14,43 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        // Create Admin User
-        $admin = User::create([
-            'name' => 'Admin User',
-            'email' => 'admin@khomolanu.com',
-            'phone' => '+265888000001',
-            'password' => Hash::make('password'),
-            'role' => 'admin',
-            'is_verified' => true,
-            'email_verified_at' => now(),
-        ]);
+        // Create first Admin User (idempotent)
+        $admin = User::firstOrCreate(
+            ['email' => 'admin@khomolanu.com'],
+            [
+                'name' => 'Admin User',
+                'phone' => '+265888000001',
+                'password' => Hash::make('password'),
+                'role' => 'admin',
+                'is_verified' => true,
+                'email_verified_at' => now(),
+            ]
+        );
+        if (!$admin->adminProfile) {
+            AdminProfile::create([
+                'user_id' => $admin->id,
+                'permission_level' => 'super_admin',
+            ]);
+        }
 
-        AdminProfile::create([
-            'user_id' => $admin->id,
-            'permission_level' => 'super_admin',
-        ]);
+        // Second Admin User (create only if not exists)
+        $admin2 = User::firstOrCreate(
+            ['email' => 'admin2@khomolanu.com'],
+            [
+                'name' => 'Admin Two',
+                'phone' => '+265888000002',
+                'password' => Hash::make('password'),
+                'role' => 'admin',
+                'is_verified' => true,
+                'email_verified_at' => now(),
+            ]
+        );
+        if (!$admin2->adminProfile) {
+            AdminProfile::create([
+                'user_id' => $admin2->id,
+                'permission_level' => 'moderator',
+            ]);
+        }
 
         // Create Verified Landlords
         $landlords = [
